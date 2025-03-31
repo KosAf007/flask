@@ -3,6 +3,7 @@ import whisper
 import os
 import logging
 import ffmpeg
+import uuid
 
 app = Flask(__name__)
 
@@ -38,8 +39,9 @@ def transcribe():
         return jsonify({"error": "No audio file provided"}), 400
     
     audio_file = request.files["audio"]
-    input_path = "temp_audio.ogg"
-    audio_path = "temp_audio.wav"
+    unique_id = str(uuid.uuid4())
+    input_path = f"temp_audio_{unique_id}.ogg"
+    audio_path = f"temp_audio_{unique_id}.wav"
     audio_file.save(input_path)
 
     try:
@@ -47,13 +49,14 @@ def transcribe():
         logger.info("Converting OGG to WAV...")
         stream = ffmpeg.input(input_path)
         stream = ffmpeg.output(stream, audio_path, acodec="pcm_s16le", ac=1, ar="16000")
-        ffmpeg.run(stream, overwrite_output=True)  # Додаємо overwrite_output=True
+        ffmpeg.run(stream, overwrite_output=True)
         logger.info("Conversion successful")
 
         # Транскрипція
         model = load_model()
         logger.info("Starting transcription...")
-        result = model.transcribe(audio_path, language="uk")
+        result = model.transcribe(audio_path, language="uk", fp16=False)  # Вказуємо fp16=False
+        logger.info("Transcription completed, processing result...")
         text = result["text"]
         logger.info(f"Transcription successful: {text}")
         return jsonify({"text": text})
