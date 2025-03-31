@@ -16,7 +16,7 @@ logger.info("Starting Flask app...")
 # Завантажуємо модель під час старту
 logger.info("Loading Whisper model at startup...")
 try:
-    model = whisper.load_model("base")
+    model = whisper.load_model("tiny")
     logger.info("Whisper model loaded successfully at startup")
 except Exception as e:
     logger.error(f"Failed to load Whisper model at startup: {str(e)}")
@@ -49,7 +49,7 @@ def transcribe():
 
         # Транскрипція
         logger.info("Starting transcription...")
-        result = model.transcribe(audio_path, language="uk", fp16=False)
+        result = model.transcribe(audio_path, language="uk", fp16=False, verbose=True)
         logger.info("Transcription completed, processing result...")
         text = result["text"]
         logger.info(f"Transcription successful: {text}")
