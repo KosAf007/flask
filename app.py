@@ -4,12 +4,24 @@ import os
 import logging
 import ffmpeg
 import uuid
+import sys
 
 app = Flask(__name__)
 
 # Налаштування логування
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# Видаляємо всі попередні обробники, щоб уникнути конфліктів
+for handler in logger.handlers[:]:
+    logger.removeHandler(handler)
+
+# Налаштовуємо обробник для виводу в stdout
+handler = logging.StreamHandler(stream=sys.stdout)
+handler.setLevel(logging.INFO)
+formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 logger.info("Starting Flask app...")
 
