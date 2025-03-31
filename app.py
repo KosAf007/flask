@@ -56,24 +56,29 @@ def transcribe():
         logger.info("Converting OGG to WAV...")
         stream = ffmpeg.input(input_path)
         stream = ffmpeg.output(stream, audio_path, acodec="pcm_s16le", ac=1, ar="16000")
-        # Захоплюємо stdout і stderr
         process = ffmpeg.run_async(stream, pipe_stdout=True, pipe_stderr=True, overwrite_output=True)
         stdout, stderr = process.communicate()
         
-        # Логуємо вивід FFmpeg через наш логер
+        if process.returncode != 0:
+            logger.error(f"FFmpeg failed with return code {process.returncode}")
+            raise Exception(f"FFmpeg failed: {stderr.decode()}")
+        
         if stdout:
             for line in stdout.decode().splitlines():
                 logger.info(f"FFmpeg stdout: {line.strip()}")
         if stderr:
             for line in stderr.decode().splitlines():
-                logger.info(f"FFmpeg stderr: {line.strip()}")  # Використовуємо INFO, щоб уникнути level: "error"
+                logger.info(f"FFmpeg stderr: {line.strip()}")
         
         logger.info("Conversion successful")
 
         # Транскрипція
         logger.info("Starting transcription...")
         logger.info("Loading audio file for transcription...")
+        logger.info(f"Audio file path: {audio_path}")
+        logger.info("Calling Whisper transcribe...")
         result = model.transcribe(audio_path, language="uk", fp16=False, verbose=True)
+        logger.info("Whisper transcribe completed")
         logger.info("Transcription completed, processing result...")
         text = result["text"]
         logger.info(f"Transcription successful: {text}")
