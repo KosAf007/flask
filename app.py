@@ -5,6 +5,8 @@ import logging
 import ffmpeg
 import uuid
 import sys
+import threading
+import time
 
 app = Flask(__name__)
 
@@ -28,7 +30,7 @@ logger.info("Starting Flask app...")
 # Завантажуємо модель під час старту
 logger.info("Loading Whisper model at startup...")
 try:
-    model = whisper.load_model("base")
+    model = whisper.load_model("tiny")
     logger.info("Whisper model loaded successfully at startup")
 except Exception as e:
     logger.error(f"Failed to load Whisper model at startup: {str(e)}")
@@ -71,16 +73,39 @@ def transcribe():
                 logger.info(f"FFmpeg stderr: {line.strip()}")
         
         logger.info("Conversion successful")
+        file_size = os.path.getsize(audio_path) / 1024  # Розмір у КБ
+        logger.info(f"Converted WAV file size: {file_size:.2f} KB")
 
-        # Транскрипція
+        # Транскрипція з тайм-аутом
         logger.info("Starting transcription...")
         logger.info("Loading audio file for transcription...")
         logger.info(f"Audio file path: {audio_path}")
         logger.info("Calling Whisper transcribe...")
-        result = model.transcribe(audio_path, language="uk", fp16=False, verbose=True)
+
+        # Використовуємо threading для тайм-ауту
+        result = [None]
+        exception = [None]
+        def run_transcription():
+            try:
+                result[0] = model.transcribe(audio_path, language="uk", fp16=False, verbose=True)
+            except Exception as e:
+                exception[0] = e
+
+        transcription_thread = threading.Thread(target=run_transcription)
+        transcription_thread.start()
+        transcription_thread.join(timeout=300)  # Тайм-аут 300 секунд
+
+        if transcription_thread.is_alive():
+            logger.error("Transcription timed out after 300 seconds")
+            raise Exception("Transcription timed out")
+        
+        if exception[0] is not None:
+            logger.error(f"Whisper transcription failed: {str(exception[0])}")
+            raise exception[0]
+
         logger.info("Whisper transcribe completed")
         logger.info("Transcription completed, processing result...")
-        text = result["text"]
+        text = result[0]["text"]
         logger.info(f"Transcription successful: {text}")
         return jsonify({"text": text})
     except Exception as e:
