@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 import whisper
 import os
 import logging
+import ffmpeg
 
 app = Flask(__name__)
 
@@ -18,7 +19,7 @@ def load_model():
     if model is None:
         logger.info("Starting to load Whisper model...")
         try:
-            model = whisper.load_model("tiny")  # Завантажуємо модель лише при першому запиті
+            model = whisper.load_model("tiny")
             logger.info("Whisper model loaded successfully")
         except Exception as e:
             logger.error(f"Failed to load Whisper model: {str(e)}")
@@ -37,11 +38,20 @@ def transcribe():
         return jsonify({"error": "No audio file provided"}), 400
     
     audio_file = request.files["audio"]
+    input_path = "temp_audio.ogg"
     audio_path = "temp_audio.wav"
-    audio_file.save(audio_path)
+    audio_file.save(input_path)
 
     try:
-        model = load_model()  # Завантажуємо модель перед використанням
+        # Конвертуємо OGG у WAV
+        logger.info("Converting OGG to WAV...")
+        stream = ffmpeg.input(input_path)
+        stream = ffmpeg.output(stream, audio_path, acodec="pcm_s16le", ac=1, ar="16000")
+        ffmpeg.run(stream)
+        logger.info("Conversion successful")
+
+        # Транскрипція
+        model = load_model()
         logger.info("Starting transcription...")
         result = model.transcribe(audio_path, language="uk")
         text = result["text"]
@@ -51,6 +61,8 @@ def transcribe():
         logger.error(f"Transcription failed: {str(e)}")
         return jsonify({"error": str(e)}), 500
     finally:
+        if os.path.exists(input_path):
+            os.remove(input_path)
         if os.path.exists(audio_path):
             os.remove(audio_path)
 
