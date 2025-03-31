@@ -47,7 +47,7 @@ def transcribe():
         logger.info("Converting OGG to WAV...")
         stream = ffmpeg.input(input_path)
         stream = ffmpeg.output(stream, audio_path, acodec="pcm_s16le", ac=1, ar="16000")
-        ffmpeg.run(stream)
+        ffmpeg.run(stream, overwrite_output=True)  # Додаємо overwrite_output=True
         logger.info("Conversion successful")
 
         # Транскрипція
