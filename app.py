@@ -6,7 +6,6 @@ import ffmpeg
 import uuid
 import sys
 import threading
-import time
 
 app = Flask(__name__)
 
@@ -30,7 +29,7 @@ logger.info("Starting Flask app...")
 # Завантажуємо модель під час старту
 logger.info("Loading Whisper model at startup...")
 try:
-    model = whisper.load_model("tiny")
+    model = whisper.load_model("base")
     logger.info("Whisper model loaded successfully at startup")
 except Exception as e:
     logger.error(f"Failed to load Whisper model at startup: {str(e)}")
@@ -107,7 +106,10 @@ def transcribe():
         logger.info("Transcription completed, processing result...")
         text = result[0]["text"]
         logger.info(f"Transcription successful: {text}")
-        return jsonify({"text": text})
+        # Переконайтеся, що відповідь у UTF-8
+        response = jsonify({"text": text})
+        response.headers['Content-Type'] = 'application/json; charset=utf-8'
+        return response
     except Exception as e:
         logger.error(f"Transcription failed: {str(e)}")
         return jsonify({"error": str(e)}), 500
