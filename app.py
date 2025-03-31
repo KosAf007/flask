@@ -13,19 +13,14 @@ logger = logging.getLogger(__name__)
 
 logger.info("Starting Flask app...")
 
-model = None  # Не завантажуємо модель одразу
-
-def load_model():
-    global model
-    if model is None:
-        logger.info("Starting to load Whisper model...")
-        try:
-            model = whisper.load_model("tiny")
-            logger.info("Whisper model loaded successfully")
-        except Exception as e:
-            logger.error(f"Failed to load Whisper model: {str(e)}")
-            raise
-    return model
+# Завантажуємо модель під час старту
+logger.info("Loading Whisper model at startup...")
+try:
+    model = whisper.load_model("base")
+    logger.info("Whisper model loaded successfully at startup")
+except Exception as e:
+    logger.error(f"Failed to load Whisper model at startup: {str(e)}")
+    raise
 
 @app.route('/')
 def home():
@@ -53,9 +48,8 @@ def transcribe():
         logger.info("Conversion successful")
 
         # Транскрипція
-        model = load_model()
         logger.info("Starting transcription...")
-        result = model.transcribe(audio_path, language="uk", fp16=False)  # Вказуємо fp16=False
+        result = model.transcribe(audio_path, language="uk", fp16=False)
         logger.info("Transcription completed, processing result...")
         text = result["text"]
         logger.info(f"Transcription successful: {text}")
