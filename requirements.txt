@@ -3,4 +3,4 @@ gunicorn
 git+https://github.com/openai/whisper.git
 ffmpeg-python
 torch==2.0.1
-numpy
+numpy==1.24.3
