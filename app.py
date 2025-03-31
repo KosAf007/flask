@@ -28,7 +28,7 @@ logger.info("Starting Flask app...")
 # Завантажуємо модель під час старту
 logger.info("Loading Whisper model at startup...")
 try:
-    model = whisper.load_model("tiny")
+    model = whisper.load_model("base")
     logger.info("Whisper model loaded successfully at startup")
 except Exception as e:
     logger.error(f"Failed to load Whisper model at startup: {str(e)}")
